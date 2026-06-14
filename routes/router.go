@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/KishiEdward/back-skenaid/handlers"
 	"github.com/KishiEdward/back-skenaid/middleware"
+	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter() *gin.Engine {
@@ -50,6 +50,21 @@ func SetupRouter() *gin.Engine {
 	adminProducts.POST("", productHandler.Create)
 	adminProducts.PUT("/:id", productHandler.Update)
 	adminProducts.DELETE("/:id", productHandler.Delete)
+
+    cartHandler := handlers.NewCartHandler()
+    orderHandler := handlers.NewOrderHandler()
+
+    cart := protected.Group("/cart")
+    cart.GET("", cartHandler.GetCart)
+    cart.POST("", cartHandler.AddToCart)
+    cart.PUT("/:id", cartHandler.UpdateCartItem)
+    cart.DELETE("/:id", cartHandler.RemoveCartItem)
+    cart.DELETE("", cartHandler.ClearCart)
+
+    orders := protected.Group("/orders")
+    orders.GET("", orderHandler.GetMyOrders)
+    orders.GET("/:id", orderHandler.GetOrderDetail)
+    orders.POST("/checkout", orderHandler.Checkout)
 
 	return r
 }
