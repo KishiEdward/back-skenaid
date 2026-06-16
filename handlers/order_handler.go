@@ -26,12 +26,10 @@ func (h *OrderHandler) Checkout(c *gin.Context) {
 		return
 	}
 
-	userID := uint(1) // Sementara hardcode user ID 1 untuk testing
+	userID := uint(1)
 
-	// Mulai Database Transaction (jika satu gagal, semua dibatalkan)
 	tx := config.DB.Begin()
 
-	// 1. Ambil keranjang user
 	var cart models.Cart
 	if err := tx.Preload("Items.Product").Where("user_id = ?", userID).First(&cart).Error; err != nil {
 		tx.Rollback()
@@ -45,7 +43,6 @@ func (h *OrderHandler) Checkout(c *gin.Context) {
 		return
 	}
 
-	// 2. Buat Order Baru
 	var totalAmount float64
 	order := models.Order{
 		UserID:          userID,
@@ -55,18 +52,15 @@ func (h *OrderHandler) Checkout(c *gin.Context) {
 		PaymentMethod:   input.PaymentMethod,
 	}
 
-	// 3. Pindahkan CartItem ke OrderItem DAN Kurangi Stok
 	for _, item := range cart.Items {
 		totalAmount += item.Subtotal
 
-		// CEK STOK
 		if item.Product.Stock < item.Quantity {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Stok tidak cukup untuk produk: " + item.Product.Name})
 			return
 		}
 
-		// KURANGI STOK PRODUK
 		newStock := item.Product.Stock - item.Quantity
 		if err := tx.Model(&item.Product).Update("stock", newStock).Error; err != nil {
 			tx.Rollback()
@@ -74,7 +68,6 @@ func (h *OrderHandler) Checkout(c *gin.Context) {
 			return
 		}
 
-		// Buat item pesanan
 		orderItem := models.OrderItem{
 			ProductID:   item.ProductID,
 			ProductName: item.Product.Name,
@@ -87,21 +80,18 @@ func (h *OrderHandler) Checkout(c *gin.Context) {
 
 	order.TotalAmount = totalAmount
 
-	// Simpan pesanan ke database
 	if err := tx.Create(&order).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal membuat pesanan"})
 		return
 	}
 
-	// 4. Kosongkan Keranjang
 	if err := tx.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal mengosongkan keranjang"})
 		return
 	}
 
-	// Selesaikan transaksi
 	tx.Commit()
 
 	c.JSON(http.StatusOK, gin.H{
@@ -112,7 +102,7 @@ func (h *OrderHandler) Checkout(c *gin.Context) {
 }
 
 func (h *OrderHandler) GetMyOrders(c *gin.Context) {
-	userID := uint(1) // Hardcode sementara
+	userID := uint(1)
 
 	var orders []models.Order
 	if err := config.DB.Preload("Items").Where("user_id = ?", userID).Order("created_at desc").Find(&orders).Error; err != nil {

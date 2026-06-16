@@ -10,4 +10,6 @@ type User struct {
 	Role          string `gorm:"size:20;default:user" json:"role"`
 	EmailVerified bool   `gorm:"default:false" json:"email_verified"`
 	LastLoginAt   *int64 `gorm:"index" json:"last_login_at,omitempty"`
+	Phone         string `gorm:"size:20" json:"phone"`
+	Address       string `gorm:"type:text" json:"address"`
 }
