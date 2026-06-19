@@ -14,28 +14,20 @@ func NewUserHandler() *UserHandler {
 	return &UserHandler{}
 }
 
-// GET /v1/user/profile
 func (h *UserHandler) GetProfile(c *gin.Context) {
-	// ==========================================
-	// Nanti buka komentar ini jika AuthMiddleware 
-	// sudah menyimpan "user_id" dari Firebase:
-	//
-	// userIDRaw, exists := c.Get("user_id")
-	// if !exists {
-	// 	c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Tidak ada akses"})
-	// 	return
-	// }
-	// userID := userIDRaw.(uint)
-	// ==========================================
-
-	// Hardcode ID 1 untuk testing UI Profil & Checkout
-	userID := uint(1) 
+	firebaseUID, exists := c.Get("firebase_uid")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "Sesi tidak valid",
+		})
+		return
+	}
 
 	var user models.User
-	// GORM otomatis mencari berdasarkan Primary Key (ID) bawaan gorm.Model
-	if err := config.DB.First(&user, userID).Error; err != nil {
+	if err := config.DB.Where("firebase_uid = ?", firebaseUID).First(&user).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"success": false, 
+			"success": false,
 			"message": "Data user tidak ditemukan",
 		})
 		return

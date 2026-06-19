@@ -66,5 +66,10 @@ func SetupRouter() *gin.Engine {
     orders.GET("/:id", orderHandler.GetOrderDetail)
     orders.POST("/checkout", orderHandler.Checkout)
 
+	userHandler := handlers.NewUserHandler()
+	userGroup := protected.Group("/user")
+	{
+		userGroup.GET("/profile", userHandler.GetProfile)
+	}
 	return r
 }
