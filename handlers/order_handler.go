@@ -102,11 +102,28 @@ func (h *OrderHandler) Checkout(c *gin.Context) {
 }
 
 func (h *OrderHandler) GetMyOrders(c *gin.Context) {
-	userID := uint(1)
+	firebaseUID, exists := c.Get("firebase_uid")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Sesi tidak valid"})
+		return
+	}
+
+	var user models.User
+	if err := config.DB.Where("firebase_uid = ?", firebaseUID).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "User tidak ditemukan"})
+		return
+	}
 
 	var orders []models.Order
-	if err := config.DB.Preload("Items").Where("user_id = ?", userID).Order("created_at desc").Find(&orders).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal mengambil pesanan"})
+	if err := config.DB.Preload("Items").Preload("Items.Product").
+		Where("user_id = ?", user.ID).
+		Order("created_at desc").
+		Find(&orders).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Gagal mengambil riwayat pesanan",
+			"error":   err.Error(),
+		})
 		return
 	}
 

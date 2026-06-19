@@ -19,6 +19,7 @@ type OrderItem struct {
 	ID          uint    `gorm:"primaryKey" json:"id"`
 	OrderID     uint    `json:"order_id"`
 	ProductID   uint    `json:"product_id"`
+	Product     Product `gorm:"foreignKey:ProductID" json:"product"`
 	ProductName string  `json:"product_name"`
 	Price       float64 `json:"price"`
 	Quantity    int     `json:"quantity"`
