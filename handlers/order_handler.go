@@ -149,3 +149,47 @@ func (h *OrderHandler) GetOrderDetail(c *gin.Context) {
 		"data":    order,
 	})
 }
+
+func (h *OrderHandler) SkeWalletWebhook(c *gin.Context) {
+	var payload struct {
+		Reference string  `json:"reference"`
+		Amount    float64 `json:"amount"`
+		Status    string  `json:"status"`
+	}
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Format data tidak valid"})
+		return
+	}
+
+	var orderID string
+	if len(payload.Reference) > 4 && payload.Reference[:4] == "INV-" {
+		orderID = payload.Reference[4:]
+	} else {
+		orderID = payload.Reference
+	}
+
+	var order models.Order
+	if err := config.DB.First(&order, orderID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Pesanan tidak ditemukan"})
+		return
+	}
+
+	if payload.Status == "success" {
+		if order.TotalAmount != payload.Amount {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Nominal pembayaran tidak sesuai"})
+			return
+		}
+
+		order.Status = "completed"
+		if err := config.DB.Save(&order).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal mengupdate status pesanan"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Status pesanan berhasil diupdate menjadi completed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Webhook diterima namun status bukan success"})
+}
