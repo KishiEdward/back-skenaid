@@ -33,6 +33,10 @@ func SetupRouter() *gin.Engine {
 		})
 	})
 
+	orderHandlerWebhook := handlers.NewOrderHandler()
+	
+	v1.POST("/webhook/skewallet", orderHandlerWebhook.SkeWalletWebhook)
+
 	auth := v1.Group("/auth")
 	auth.POST("/verify-token", authHandler.VerifyToken)
 
