@@ -61,7 +61,7 @@ Pastikan perangkat Anda sudah memiliki:
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/Frientia/skenaid-backend.git
+git clone https://github.com/KishiEdward/skenaid-backend.git
 cd skenaid
 ```
 
